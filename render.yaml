@@ -3,7 +3,7 @@ services:
     name: library-management-backend
     runtime: node
     plan: free
-    repo: https://github.com/your-username/library-management-backend
+    repo: https://github.com/Manish-Kumar148/Book_Management_backened_api
     branch: main
     buildCommand: npm install
     startCommand: npm start
