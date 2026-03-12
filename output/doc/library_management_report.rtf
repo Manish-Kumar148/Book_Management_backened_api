@@ -1,0 +1,514 @@
+{\rtf1\ansi\deff0
+Library Management System Backend Report\par
+=======================================\par
+\par
+B.Tech, 4th Semester\par
+MSE-1 Examination (Practical), Even Semester 2025-26\par
+Course: AI308B, AI Driven Full Stack Development\par
+\par
+1. Objective\par
+Develop a backend API for a Library Management System that can add, view, update, delete, and search book records.\par
+\par
+2. Technology Stack\par
+- Node.js and Express.js\par
+- MongoDB and Mongoose\par
+- dotenv\par
+- Postman\par
+- GitHub and Render\par
+\par
+3. REST API Endpoints\par
+- POST /books : Add a new book\par
+- GET /books : View all books\par
+- GET /books/:id : Get one book by ID\par
+- PUT /books/:id : Update book details\par
+- DELETE /books/:id : Delete a book\par
+- GET /books/search?title=xyz : Search by title\par
+- GET /books/search?author=xyz : Search by author\par
+\par
+4. Features Implemented\par
+- Book schema validations\par
+- Unique ISBN\par
+- Proper HTTP status codes\par
+- Error handling middleware\par
+- Async/await and try/catch in controllers\par
+- Render deployment blueprint\par
+\par
+5. package.json\par
+\{\par
+  "name": "library-management-backend",\par
+  "version": "1.0.0",\par
+  "description": "Backend API for a university library management system.",\par
+  "main": "src/server.js",\par
+  "scripts": \{\par
+    "dev": "nodemon src/server.js",\par
+    "start": "node src/server.js",\par
+    "seed": "node src/seed/seedBooks.js",\par
+    "report": "python3 scripts/generate_report.py",\par
+    "report:docx": "textutil -convert docx output/doc/library_management_report.rtf -output output/doc/library_management_report.docx",\par
+    "report:pdf": "cupsfilter output/doc/library_management_report.txt > output/pdf/library_management_report.pdf",\par
+    "report:all": "python3 scripts/generate_report.py && textutil -convert docx output/doc/library_management_report.rtf -output output/doc/library_management_report.docx && cupsfilter output/doc/library_management_report.txt > output/pdf/library_management_report.pdf"\par
+  \},\par
+  "keywords": [\par
+    "express",\par
+    "mongodb",\par
+    "mongoose",\par
+    "library-management"\par
+  ],\par
+  "author": "Codex",\par
+  "license": "MIT",\par
+  "dependencies": \{\par
+    "cors": "^2.8.5",\par
+    "dotenv": "^16.4.5",\par
+    "express": "^4.21.2",\par
+    "mongoose": "^8.9.5",\par
+    "morgan": "^1.10.0"\par
+  \},\par
+  "devDependencies": \{\par
+    "nodemon": "^3.1.9"\par
+  \}\par
+\}\par
+\par
+\par
+6. app.js\par
+const cors = require('cors');\par
+const express = require('express');\par
+const morgan = require('morgan');\par
+\par
+const bookRoutes = require('./routes/bookRoutes');\par
+const \{ notFoundHandler, errorHandler \} = require('./middleware/errorMiddleware');\par
+\par
+const app = express();\par
+\par
+app.use(cors());\par
+app.use(express.json());\par
+app.use(morgan('dev'));\par
+\par
+app.get('/', (req, res) => \{\par
+  res.status(200).json(\{\par
+    success: true,\par
+    message: 'Library Management Backend API is running.'\par
+  \});\par
+\});\par
+\par
+app.get('/health', (req, res) => \{\par
+  res.status(200).json(\{\par
+    success: true,\par
+    status: 'UP'\par
+  \});\par
+\});\par
+\par
+app.use('/books', bookRoutes);\par
+\par
+app.use(notFoundHandler);\par
+app.use(errorHandler);\par
+\par
+module.exports = app;\par
+\par
+\par
+7. server.js\par
+const dotenv = require('dotenv');\par
+\par
+dotenv.config();\par
+\par
+const app = require('./app');\par
+const connectDB = require('./config/db');\par
+\par
+const port = process.env.PORT || 5000;\par
+\par
+const startServer = async () => \{\par
+  await connectDB();\par
+\par
+  app.listen(port, () => \{\par
+    console.log(`Server running on port $\{port\}`);\par
+  \});\par
+\};\par
+\par
+startServer().catch((error) => \{\par
+  console.error('Failed to start server:', error.message);\par
+  process.exit(1);\par
+\});\par
+\par
+\par
+8. Book Model\par
+const mongoose = require('mongoose');\par
+\par
+const bookSchema = new mongoose.Schema(\par
+  \{\par
+    title: \{\par
+      type: String,\par
+      required: [true, 'Title is required'],\par
+      trim: true\par
+    \},\par
+    author: \{\par
+      type: String,\par
+      required: [true, 'Author is required'],\par
+      trim: true\par
+    \},\par
+    isbn: \{\par
+      type: String,\par
+      required: [true, 'ISBN is required'],\par
+      unique: true,\par
+      trim: true\par
+    \},\par
+    genre: \{\par
+      type: String,\par
+      required: [true, 'Genre is required'],\par
+      trim: true\par
+    \},\par
+    publisher: \{\par
+      type: String,\par
+      required: [true, 'Publisher is required'],\par
+      trim: true\par
+    \},\par
+    publicationYear: \{\par
+      type: Number,\par
+      min: [0, 'Publication year cannot be negative']\par
+    \},\par
+    totalCopies: \{\par
+      type: Number,\par
+      required: [true, 'Total copies is required'],\par
+      min: [1, 'Total copies must be a positive number']\par
+    \},\par
+    availableCopies: \{\par
+      type: Number,\par
+      required: [true, 'Available copies is required'],\par
+      min: [0, 'Available copies cannot be negative'],\par
+      validate: \{\par
+        validator(value) \{\par
+          return value <= this.totalCopies;\par
+        \},\par
+        message: 'Available copies cannot exceed total copies'\par
+      \}\par
+    \},\par
+    shelfLocation: \{\par
+      type: String,\par
+      trim: true\par
+    \},\par
+    bookType: \{\par
+      type: String,\par
+      enum: ['Reference', 'Circulating'],\par
+      default: 'Circulating'\par
+    \},\par
+    status: \{\par
+      type: String,\par
+      enum: ['Available', 'Checked Out'],\par
+      default: 'Available'\par
+    \}\par
+  \},\par
+  \{\par
+    timestamps: true\par
+  \}\par
+);\par
+\par
+module.exports = mongoose.model('Book', bookSchema);\par
+\par
+\par
+9. Controller Logic\par
+const Book = require('../models/Book');\par
+\par
+const createBook = async (req, res, next) => \{\par
+  try \{\par
+    const book = await Book.create(req.body);\par
+    res.status(201).json(\{\par
+      success: true,\par
+      data: book\par
+    \});\par
+  \} catch (error) \{\par
+    next(error);\par
+  \}\par
+\};\par
+\par
+const getBooks = async (req, res, next) => \{\par
+  try \{\par
+    const books = await Book.find().sort(\{ createdAt: -1 \});\par
+    res.status(200).json(\{\par
+      success: true,\par
+      count: books.length,\par
+      data: books\par
+    \});\par
+  \} catch (error) \{\par
+    next(error);\par
+  \}\par
+\};\par
+\par
+const getBookById = async (req, res, next) => \{\par
+  try \{\par
+    const book = await Book.findById(req.params.id);\par
+\par
+    if (!book) \{\par
+      return res.status(404).json(\{\par
+        success: false,\par
+        message: 'Book not found'\par
+      \});\par
+    \}\par
+\par
+    res.status(200).json(\{\par
+      success: true,\par
+      data: book\par
+    \});\par
+  \} catch (error) \{\par
+    next(error);\par
+  \}\par
+\};\par
+\par
+const updateBook = async (req, res, next) => \{\par
+  try \{\par
+    const book = await Book.findByIdAndUpdate(req.params.id, req.body, \{\par
+      new: true,\par
+      runValidators: true\par
+    \});\par
+\par
+    if (!book) \{\par
+      return res.status(404).json(\{\par
+        success: false,\par
+        message: 'Book not found'\par
+      \});\par
+    \}\par
+\par
+    res.status(200).json(\{\par
+      success: true,\par
+      data: book\par
+    \});\par
+  \} catch (error) \{\par
+    next(error);\par
+  \}\par
+\};\par
+\par
+const deleteBook = async (req, res, next) => \{\par
+  try \{\par
+    const book = await Book.findByIdAndDelete(req.params.id);\par
+\par
+    if (!book) \{\par
+      return res.status(404).json(\{\par
+        success: false,\par
+        message: 'Book not found'\par
+      \});\par
+    \}\par
+\par
+    res.status(200).json(\{\par
+      success: true,\par
+      message: 'Book deleted successfully'\par
+    \});\par
+  \} catch (error) \{\par
+    next(error);\par
+  \}\par
+\};\par
+\par
+const searchBooks = async (req, res, next) => \{\par
+  try \{\par
+    const \{ title, author \} = req.query;\par
+\par
+    if (!title && !author) \{\par
+      return res.status(400).json(\{\par
+        success: false,\par
+        message: 'Provide title or author as a query parameter'\par
+      \});\par
+    \}\par
+\par
+    const query = \{\};\par
+\par
+    if (title) \{\par
+      query.title = \{ $regex: title, $options: 'i' \};\par
+    \}\par
+\par
+    if (author) \{\par
+      query.author = \{ $regex: author, $options: 'i' \};\par
+    \}\par
+\par
+    const books = await Book.find(query).sort(\{ title: 1 \});\par
+\par
+    res.status(200).json(\{\par
+      success: true,\par
+      count: books.length,\par
+      data: books\par
+    \});\par
+  \} catch (error) \{\par
+    next(error);\par
+  \}\par
+\};\par
+\par
+module.exports = \{\par
+  createBook,\par
+  getBooks,\par
+  getBookById,\par
+  updateBook,\par
+  deleteBook,\par
+  searchBooks\par
+\};\par
+\par
+\par
+10. Routes\par
+const express = require('express');\par
+\par
+const \{\par
+  createBook,\par
+  getBooks,\par
+  getBookById,\par
+  updateBook,\par
+  deleteBook,\par
+  searchBooks\par
+\} = require('../controllers/bookController');\par
+\par
+const router = express.Router();\par
+\par
+router.get('/search', searchBooks);\par
+router.route('/').post(createBook).get(getBooks);\par
+router.route('/:id').get(getBookById).put(updateBook).delete(deleteBook);\par
+\par
+module.exports = router;\par
+\par
+\par
+11. Postman Collection\par
+\{\par
+  "info": \{\par
+    "name": "Library Management Backend",\par
+    "_postman_id": "1db5108e-2e64-4cf8-b3c2-b8f5b3123456",\par
+    "description": "Postman collection for the Library Management Backend API.",\par
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"\par
+  \},\par
+  "item": [\par
+    \{\par
+      "name": "Create Book",\par
+      "request": \{\par
+        "method": "POST",\par
+        "header": [\par
+          \{\par
+            "key": "Content-Type",\par
+            "value": "application/json"\par
+          \}\par
+        ],\par
+        "body": \{\par
+          "mode": "raw",\par
+          "raw": "\{\\n  \\"title\\": \\"Node.js Design Patterns\\",\\n  \\"author\\": \\"Mario Casciaro\\",\\n  \\"isbn\\": \\"9781839214110\\",\\n  \\"genre\\": \\"Programming\\",\\n  \\"publisher\\": \\"Packt\\",\\n  \\"publicationYear\\": 2022,\\n  \\"totalCopies\\": 8,\\n  \\"availableCopies\\": 8,\\n  \\"shelfLocation\\": \\"D1-R4\\",\\n  \\"bookType\\": \\"Circulating\\",\\n  \\"status\\": \\"Available\\"\\n\}"\par
+        \},\par
+        "url": \{\par
+          "raw": "\{\{baseUrl\}\}/books",\par
+          "host": [\par
+            "\{\{baseUrl\}\}"\par
+          ],\par
+          "path": [\par
+            "books"\par
+          ]\par
+        \}\par
+      \}\par
+    \},\par
+    \{\par
+      "name": "Get All Books",\par
+      "request": \{\par
+        "method": "GET",\par
+        "url": \{\par
+          "raw": "\{\{baseUrl\}\}/books",\par
+          "host": [\par
+            "\{\{baseUrl\}\}"\par
+          ],\par
+          "path": [\par
+            "books"\par
+          ]\par
+        \}\par
+      \}\par
+    \},\par
+    \{\par
+      "name": "Get Book By ID",\par
+      "request": \{\par
+        "method": "GET",\par
+        "url": \{\par
+          "raw": "\{\{baseUrl\}\}/books/:id",\par
+          "host": [\par
+            "\{\{baseUrl\}\}"\par
+          ],\par
+          "path": [\par
+            "books",\par
+            ":id"\par
+          ]\par
+        \}\par
+      \}\par
+    \},\par
+    \{\par
+      "name": "Update Book",\par
+      "request": \{\par
+        "method": "PUT",\par
+        "header": [\par
+          \{\par
+            "key": "Content-Type",\par
+            "value": "application/json"\par
+          \}\par
+        ],\par
+        "body": \{\par
+          "mode": "raw",\par
+          "raw": "\{\\n  \\"availableCopies\\": 5,\\n  \\"status\\": \\"Checked Out\\"\\n\}"\par
+        \},\par
+        "url": \{\par
+          "raw": "\{\{baseUrl\}\}/books/:id",\par
+          "host": [\par
+            "\{\{baseUrl\}\}"\par
+          ],\par
+          "path": [\par
+            "books",\par
+            ":id"\par
+          ]\par
+        \}\par
+      \}\par
+    \},\par
+    \{\par
+      "name": "Delete Book",\par
+      "request": \{\par
+        "method": "DELETE",\par
+        "url": \{\par
+          "raw": "\{\{baseUrl\}\}/books/:id",\par
+          "host": [\par
+            "\{\{baseUrl\}\}"\par
+          ],\par
+          "path": [\par
+            "books",\par
+            ":id"\par
+          ]\par
+        \}\par
+      \}\par
+    \},\par
+    \{\par
+      "name": "Search By Title",\par
+      "request": \{\par
+        "method": "GET",\par
+        "url": \{\par
+          "raw": "\{\{baseUrl\}\}/books/search?title=Node",\par
+          "host": [\par
+            "\{\{baseUrl\}\}"\par
+          ],\par
+          "path": [\par
+            "books",\par
+            "search"\par
+          ],\par
+          "query": [\par
+            \{\par
+              "key": "title",\par
+              "value": "Node"\par
+            \}\par
+          ]\par
+        \}\par
+      \}\par
+    \}\par
+  ],\par
+  "variable": [\par
+    \{\par
+      "key": "baseUrl",\par
+      "value": "http://localhost:5000"\par
+    \}\par
+  ]\par
+\}\par
+\par
+\par
+12. Code Output\par
+- GET /health should return server status\par
+- POST /books should return created book with status 201\par
+- GET /books should return all records\par
+- GET /books/search?title=Node should return filtered results\par
+\par
+13. MongoDB Book Storage Part\par
+After running npm run seed, the books collection stores title, author, ISBN, genre, publisher, publication year, copy counts, shelf location, book type, and status.\par
+\par
+14. Deployment on GitHub and Render\par
+Push the repository to GitHub and deploy on Render using render.yaml.\par
+GitHub Link: _________________________________\par
+Render Link: _________________________________\par
+
+}

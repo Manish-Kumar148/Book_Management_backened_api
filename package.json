@@ -1,0 +1,34 @@
+{
+  "name": "library-management-backend",
+  "version": "1.0.0",
+  "description": "Backend API for a university library management system.",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "seed": "node src/seed/seedBooks.js",
+    "report": "python3 scripts/generate_report.py",
+    "report:docx": "textutil -convert docx output/doc/library_management_report.rtf -output output/doc/library_management_report.docx",
+    "report:pdf": "cupsfilter output/doc/library_management_report.txt > output/pdf/library_management_report.pdf",
+    "report:all": "python3 scripts/generate_report.py && textutil -convert docx output/doc/library_management_report.rtf -output output/doc/library_management_report.docx && cupsfilter output/doc/library_management_report.txt > output/pdf/library_management_report.pdf"
+  },
+  "keywords": [
+    "express",
+    "mongodb",
+    "mongoose",
+    "library-management"
+  ],
+  "author": "Codex",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "mongodb": "4.1",
+    "mongoose": "^8.9.5",
+    "morgan": "^1.10.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}

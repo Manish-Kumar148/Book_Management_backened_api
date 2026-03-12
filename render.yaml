@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: library-management-backend
+    runtime: node
+    plan: free
+    repo: https://github.com/your-username/library-management-backend
+    branch: main
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGODB_URI
+        sync: false

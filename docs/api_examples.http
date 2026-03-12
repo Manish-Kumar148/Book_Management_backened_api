@@ -1,0 +1,44 @@
+### Health Check
+GET http://localhost:5000/health
+
+### Create Book
+POST http://localhost:5000/books
+Content-Type: application/json
+
+{
+  "title": "Node.js Design Patterns",
+  "author": "Mario Casciaro",
+  "isbn": "9781839214110",
+  "genre": "Programming",
+  "publisher": "Packt",
+  "publicationYear": 2022,
+  "totalCopies": 8,
+  "availableCopies": 8,
+  "shelfLocation": "D1-R4",
+  "bookType": "Circulating",
+  "status": "Available"
+}
+
+### Get All Books
+GET http://localhost:5000/books
+
+### Get Book By ID
+GET http://localhost:5000/books/{{bookId}}
+
+### Update Book
+PUT http://localhost:5000/books/{{bookId}}
+Content-Type: application/json
+
+{
+  "availableCopies": 5,
+  "status": "Checked Out"
+}
+
+### Delete Book
+DELETE http://localhost:5000/books/{{bookId}}
+
+### Search By Title
+GET http://localhost:5000/books/search?title=Node
+
+### Search By Author
+GET http://localhost:5000/books/search?author=Martin

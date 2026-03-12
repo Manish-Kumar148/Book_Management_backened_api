@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Library Management System Backend Report</title>
+  <style>
+    body {
+      font-family: Helvetica, Arial, sans-serif;
+      margin: 28px 34px;
+      color: #111827;
+      line-height: 1.45;
+    }
+    h1, h2 {
+      color: #0f172a;
+      margin-bottom: 8px;
+    }
+    h1 {
+      text-align: center;
+      font-size: 24px;
+    }
+    h2 {
+      margin-top: 24px;
+      font-size: 18px;
+      border-bottom: 1px solid #cbd5e1;
+      padding-bottom: 4px;
+    }
+    p, li {
+      font-size: 12px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 12px;
+    }
+    th, td {
+      border: 1px solid #94a3b8;
+      padding: 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: #e2e8f0;
+    }
+    pre {
+      white-space: pre-wrap;
+      font-family: "Courier New", monospace;
+      font-size: 9px;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      padding: 10px;
+      overflow-wrap: anywhere;
+    }
+    .meta {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Library Management System Backend Report</h1>
+  <div class="meta">
+    <p><strong>B.Tech, 4th Semester</strong></p>
+    <p>MSE-1 Examination (Practical), Even Semester 2025-26</p>
+    <p>Course: AI308B, AI Driven Full Stack Development</p>
+  </div>
+
+  <section>
+    <h2>1. Objective</h2>
+    <p>Develop a backend API for a Library Management System that can add, view, update, delete, and search book records.</p>
+  </section>
+
+  <section>
+    <h2>2. Technology Stack</h2>
+    <ul>
+      <li>Node.js and Express.js for backend development</li>
+      <li>MongoDB and Mongoose for database management</li>
+      <li>dotenv for environment variables</li>
+      <li>Postman for API testing</li>
+      <li>GitHub and Render for deployment</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>3. REST API Endpoints</h2>
+    <table>
+      <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+      <tr><td>POST</td><td>/books</td><td>Add a new book</td></tr>
+      <tr><td>GET</td><td>/books</td><td>View all books</td></tr>
+      <tr><td>GET</td><td>/books/:id</td><td>Get one book by ID</td></tr>
+      <tr><td>PUT</td><td>/books/:id</td><td>Update book details</td></tr>
+      <tr><td>DELETE</td><td>/books/:id</td><td>Delete a book</td></tr>
+      <tr><td>GET</td><td>/books/search?title=xyz</td><td>Search by title</td></tr>
+      <tr><td>GET</td><td>/books/search?author=xyz</td><td>Search by author</td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>4. Features Implemented</h2>
+    <ul>
+      <li>Book schema with required validations and unique ISBN</li>
+      <li>Proper HTTP status codes: 200, 201, 400, 404, and 500</li>
+      <li>Centralized error handling middleware</li>
+      <li>Async/await and try/catch in all controllers</li>
+      <li>Render deployment blueprint using <code>render.yaml</code></li>
+    </ul>
+  </section>
+
+  
+    <section>
+      <h2>5. package.json</h2>
+      <pre>{
+  &quot;name&quot;: &quot;library-management-backend&quot;,
+  &quot;version&quot;: &quot;1.0.0&quot;,
+  &quot;description&quot;: &quot;Backend API for a university library management system.&quot;,
+  &quot;main&quot;: &quot;src/server.js&quot;,
+  &quot;scripts&quot;: {
+    &quot;dev&quot;: &quot;nodemon src/server.js&quot;,
+    &quot;start&quot;: &quot;node src/server.js&quot;,
+    &quot;seed&quot;: &quot;node src/seed/seedBooks.js&quot;,
+    &quot;report&quot;: &quot;python3 scripts/generate_report.py&quot;,
+    &quot;report:docx&quot;: &quot;textutil -convert docx output/doc/library_management_report.html -output output/doc/library_management_report.docx&quot;,
+    &quot;report:pdf&quot;: &quot;cupsfilter output/doc/library_management_report.html &gt; output/pdf/library_management_report.pdf&quot;
+  },
+  &quot;keywords&quot;: [
+    &quot;express&quot;,
+    &quot;mongodb&quot;,
+    &quot;mongoose&quot;,
+    &quot;library-management&quot;
+  ],
+  &quot;author&quot;: &quot;Codex&quot;,
+  &quot;license&quot;: &quot;MIT&quot;,
+  &quot;dependencies&quot;: {
+    &quot;cors&quot;: &quot;^2.8.5&quot;,
+    &quot;dotenv&quot;: &quot;^16.4.5&quot;,
+    &quot;express&quot;: &quot;^4.21.2&quot;,
+    &quot;mongoose&quot;: &quot;^8.9.5&quot;,
+    &quot;morgan&quot;: &quot;^1.10.0&quot;
+  },
+  &quot;devDependencies&quot;: {
+    &quot;nodemon&quot;: &quot;^3.1.9&quot;
+  }
+}
+</pre>
+    </section>
+    
+  
+    <section>
+      <h2>6. app.js</h2>
+      <pre>const cors = require(&#x27;cors&#x27;);
+const express = require(&#x27;express&#x27;);
+const morgan = require(&#x27;morgan&#x27;);
+
+const bookRoutes = require(&#x27;./routes/bookRoutes&#x27;);
+const { notFoundHandler, errorHandler } = require(&#x27;./middleware/errorMiddleware&#x27;);
+
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+app.use(morgan(&#x27;dev&#x27;));
+
+app.get(&#x27;/&#x27;, (req, res) =&gt; {
+  res.status(200).json({
+    success: true,
+    message: &#x27;Library Management Backend API is running.&#x27;
+  });
+});
+
+app.get(&#x27;/health&#x27;, (req, res) =&gt; {
+  res.status(200).json({
+    success: true,
+    status: &#x27;UP&#x27;
+  });
+});
+
+app.use(&#x27;/books&#x27;, bookRoutes);
+
+app.use(notFoundHandler);
+app.use(errorHandler);
+
+module.exports = app;
+</pre>
+    </section>
+    
+  
+    <section>
+      <h2>7. server.js</h2>
+      <pre>const dotenv = require(&#x27;dotenv&#x27;);
+
+dotenv.config();
+
+const app = require(&#x27;./app&#x27;);
+const connectDB = require(&#x27;./config/db&#x27;);
+
+const port = process.env.PORT || 5000;
+
+const startServer = async () =&gt; {
+  await connectDB();
+
+  app.listen(port, () =&gt; {
+    console.log(`Server running on port ${port}`);
+  });
+};
+
+startServer().catch((error) =&gt; {
+  console.error(&#x27;Failed to start server:&#x27;, error.message);
+  process.exit(1);
+});
+</pre>
+    </section>
+    
+  
+    <section>
+      <h2>8. Book Model</h2>
+      <pre>const mongoose = require(&#x27;mongoose&#x27;);
+
+const bookSchema = new mongoose.Schema(
+  {
+    title: {
+      type: String,
+      required: [true, &#x27;Title is required&#x27;],
+      trim: true
+    },
+    author: {
+      type: String,
+      required: [true, &#x27;Author is required&#x27;],
+      trim: true
+    },
+    isbn: {
+      type: String,
+      required: [true, &#x27;ISBN is required&#x27;],
+      unique: true,
+      trim: true
+    },
+    genre: {
+      type: String,
+      required: [true, &#x27;Genre is required&#x27;],
+      trim: true
+    },
+    publisher: {
+      type: String,
+      required: [true, &#x27;Publisher is required&#x27;],
+      trim: true
+    },
+    publicationYear: {
+      type: Number,
+      min: [0, &#x27;Publication year cannot be negative&#x27;]
+    },
+    totalCopies: {
+      type: Number,
+      required: [true, &#x27;Total copies is required&#x27;],
+      min: [1, &#x27;Total copies must be a positive number&#x27;]
+    },
+    availableCopies: {
+      type: Number,
+      required: [true, &#x27;Available copies is required&#x27;],
+      min: [0, &#x27;Available copies cannot be negative&#x27;],
+      validate: {
+        validator(value) {
+          return value &lt;= this.totalCopies;
+        },
+        message: &#x27;Available copies cannot exceed total copies&#x27;
+      }
+    },
+    shelfLocation: {
+      type: String,
+      trim: true
+    },
+    bookType: {
+      type: String,
+      enum: [&#x27;Reference&#x27;, &#x27;Circulating&#x27;],
+      default: &#x27;Circulating&#x27;
+    },
+    status: {
+      type: String,
+      enum: [&#x27;Available&#x27;, &#x27;Checked Out&#x27;],
+      default: &#x27;Available&#x27;
+    }
+  },
+  {
+    timestamps: true
+  }
+);
+
+module.exports = mongoose.model(&#x27;Book&#x27;, bookSchema);
+</pre>
+    </section>
+    
+  
+    <section>
+      <h2>9. Controller Logic</h2>
+      <pre>const Book = require(&#x27;../models/Book&#x27;);
+
+const createBook = async (req, res, next) =&gt; {
+  try {
+    const book = await Book.create(req.body);
+    res.status(201).json({
+      success: true,
+      data: book
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getBooks = async (req, res, next) =&gt; {
+  try {
+    const books = await Book.find().sort({ createdAt: -1 });
+    res.status(200).json({
+      success: true,
+      count: books.length,
+      data: books
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getBookById = async (req, res, next) =&gt; {
+  try {
+    const book = await Book.findById(req.params.id);
+
+    if (!book) {
+      return res.status(404).json({
+        success: false,
+        message: &#x27;Book not found&#x27;
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: book
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateBook = async (req, res, next) =&gt; {
+  try {
+    const book = await Book.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true
+    });
+
+    if (!book) {
+      return res.status(404).json({
+        success: false,
+        message: &#x27;Book not found&#x27;
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: book
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const deleteBook = async (req, res, next) =&gt; {
+  try {
+    const book = await Book.findByIdAndDelete(req.params.id);
+
+    if (!book) {
+      return res.status(404).json({
+        success: false,
+        message: &#x27;Book not found&#x27;
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: &#x27;Book deleted successfully&#x27;
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const searchBooks = async (req, res, next) =&gt; {
+  try {
+    const { title, author } = req.query;
+
+    if (!title &amp;&amp; !author) {
+      return res.status(400).json({
+        success: false,
+        message: &#x27;Provide title or author as a query parameter&#x27;
+      });
+    }
+
+    const query = {};
+
+    if (title) {
+      query.title = { $regex: title, $options: &#x27;i&#x27; };
+    }
+
+    if (author) {
+      query.author = { $regex: author, $options: &#x27;i&#x27; };
+    }
+
+    const books = await Book.find(query).sort({ title: 1 });
+
+    res.status(200).json({
+      success: true,
+      count: books.length,
+      data: books
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = {
+  createBook,
+  getBooks,
+  getBookById,
+  updateBook,
+  deleteBook,
+  searchBooks
+};
+</pre>
+    </section>
+    
+  
+    <section>
+      <h2>10. Routes</h2>
+      <pre>const express = require(&#x27;express&#x27;);
+
+const {
+  createBook,
+  getBooks,
+  getBookById,
+  updateBook,
+  deleteBook,
+  searchBooks
+} = require(&#x27;../controllers/bookController&#x27;);
+
+const router = express.Router();
+
+router.get(&#x27;/search&#x27;, searchBooks);
+router.route(&#x27;/&#x27;).post(createBook).get(getBooks);
+router.route(&#x27;/:id&#x27;).get(getBookById).put(updateBook).delete(deleteBook);
+
+module.exports = router;
+</pre>
+    </section>
+    
+  
+    <section>
+      <h2>11. Postman Collection</h2>
+      <pre>{
+  &quot;info&quot;: {
+    &quot;name&quot;: &quot;Library Management Backend&quot;,
+    &quot;_postman_id&quot;: &quot;1db5108e-2e64-4cf8-b3c2-b8f5b3123456&quot;,
+    &quot;description&quot;: &quot;Postman collection for the Library Management Backend API.&quot;,
+    &quot;schema&quot;: &quot;https://schema.getpostman.com/json/collection/v2.1.0/collection.json&quot;
+  },
+  &quot;item&quot;: [
+    {
+      &quot;name&quot;: &quot;Create Book&quot;,
+      &quot;request&quot;: {
+        &quot;method&quot;: &quot;POST&quot;,
+        &quot;header&quot;: [
+          {
+            &quot;key&quot;: &quot;Content-Type&quot;,
+            &quot;value&quot;: &quot;application/json&quot;
+          }
+        ],
+        &quot;body&quot;: {
+          &quot;mode&quot;: &quot;raw&quot;,
+          &quot;raw&quot;: &quot;{\n  \&quot;title\&quot;: \&quot;Node.js Design Patterns\&quot;,\n  \&quot;author\&quot;: \&quot;Mario Casciaro\&quot;,\n  \&quot;isbn\&quot;: \&quot;9781839214110\&quot;,\n  \&quot;genre\&quot;: \&quot;Programming\&quot;,\n  \&quot;publisher\&quot;: \&quot;Packt\&quot;,\n  \&quot;publicationYear\&quot;: 2022,\n  \&quot;totalCopies\&quot;: 8,\n  \&quot;availableCopies\&quot;: 8,\n  \&quot;shelfLocation\&quot;: \&quot;D1-R4\&quot;,\n  \&quot;bookType\&quot;: \&quot;Circulating\&quot;,\n  \&quot;status\&quot;: \&quot;Available\&quot;\n}&quot;
+        },
+        &quot;url&quot;: {
+          &quot;raw&quot;: &quot;{{baseUrl}}/books&quot;,
+          &quot;host&quot;: [
+            &quot;{{baseUrl}}&quot;
+          ],
+          &quot;path&quot;: [
+            &quot;books&quot;
+          ]
+        }
+      }
+    },
+    {
+      &quot;name&quot;: &quot;Get All Books&quot;,
+      &quot;request&quot;: {
+        &quot;method&quot;: &quot;GET&quot;,
+        &quot;url&quot;: {
+          &quot;raw&quot;: &quot;{{baseUrl}}/books&quot;,
+          &quot;host&quot;: [
+            &quot;{{baseUrl}}&quot;
+          ],
+          &quot;path&quot;: [
+            &quot;books&quot;
+          ]
+        }
+      }
+    },
+    {
+      &quot;name&quot;: &quot;Get Book By ID&quot;,
+      &quot;request&quot;: {
+        &quot;method&quot;: &quot;GET&quot;,
+        &quot;url&quot;: {
+          &quot;raw&quot;: &quot;{{baseUrl}}/books/:id&quot;,
+          &quot;host&quot;: [
+            &quot;{{baseUrl}}&quot;
+          ],
+          &quot;path&quot;: [
+            &quot;books&quot;,
+            &quot;:id&quot;
+          ]
+        }
+      }
+    },
+    {
+      &quot;name&quot;: &quot;Update Book&quot;,
+      &quot;request&quot;: {
+        &quot;method&quot;: &quot;PUT&quot;,
+        &quot;header&quot;: [
+          {
+            &quot;key&quot;: &quot;Content-Type&quot;,
+            &quot;value&quot;: &quot;application/json&quot;
+          }
+        ],
+        &quot;body&quot;: {
+          &quot;mode&quot;: &quot;raw&quot;,
+          &quot;raw&quot;: &quot;{\n  \&quot;availableCopies\&quot;: 5,\n  \&quot;status\&quot;: \&quot;Checked Out\&quot;\n}&quot;
+        },
+        &quot;url&quot;: {
+          &quot;raw&quot;: &quot;{{baseUrl}}/books/:id&quot;,
+          &quot;host&quot;: [
+            &quot;{{baseUrl}}&quot;
+          ],
+          &quot;path&quot;: [
+            &quot;books&quot;,
+            &quot;:id&quot;
+          ]
+        }
+      }
+    },
+    {
+      &quot;name&quot;: &quot;Delete Book&quot;,
+      &quot;request&quot;: {
+        &quot;method&quot;: &quot;DELETE&quot;,
+        &quot;url&quot;: {
+          &quot;raw&quot;: &quot;{{baseUrl}}/books/:id&quot;,
+          &quot;host&quot;: [
+            &quot;{{baseUrl}}&quot;
+          ],
+          &quot;path&quot;: [
+            &quot;books&quot;,
+            &quot;:id&quot;
+          ]
+        }
+      }
+    },
+    {
+      &quot;name&quot;: &quot;Search By Title&quot;,
+      &quot;request&quot;: {
+        &quot;method&quot;: &quot;GET&quot;,
+        &quot;url&quot;: {
+          &quot;raw&quot;: &quot;{{baseUrl}}/books/search?title=Node&quot;,
+          &quot;host&quot;: [
+            &quot;{{baseUrl}}&quot;
+          ],
+          &quot;path&quot;: [
+            &quot;books&quot;,
+            &quot;search&quot;
+          ],
+          &quot;query&quot;: [
+            {
+              &quot;key&quot;: &quot;title&quot;,
+              &quot;value&quot;: &quot;Node&quot;
+            }
+          ]
+        }
+      }
+    }
+  ],
+  &quot;variable&quot;: [
+    {
+      &quot;key&quot;: &quot;baseUrl&quot;,
+      &quot;value&quot;: &quot;http://localhost:5000&quot;
+    }
+  ]
+}
+</pre>
+    </section>
+    
+
+  <section>
+    <h2>12. Code Output</h2>
+    <p>Local verification should include:</p>
+    <ul>
+      <li><code>GET /health</code> returning server status</li>
+      <li><code>POST /books</code> returning the created book with status 201</li>
+      <li><code>GET /books</code> returning all stored records</li>
+      <li><code>GET /books/search?title=Node</code> returning filtered results</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>13. MongoDB Book Storage Part</h2>
+    <p>After running <code>npm run seed</code>, the MongoDB <code>books</code> collection stores title, author, ISBN, genre, publisher, publication year, copy counts, shelf location, book type, and status.</p>
+  </section>
+
+  <section>
+    <h2>14. Deployment on GitHub and Render</h2>
+    <p>Push the repository to GitHub and deploy it on Render using the provided <code>render.yaml</code> file. Replace the placeholders below with your final links.</p>
+    <p><strong>GitHub Link:</strong> _________________________________</p>
+    <p><strong>Render Link:</strong> _________________________________</p>
+  </section>
+</body>
+</html>

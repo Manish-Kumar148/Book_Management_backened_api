@@ -1,0 +1,57 @@
+{
+  "health": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "status": "UP"
+    }
+  },
+  "createBook": {
+    "status": 201,
+    "body": {
+      "success": true,
+      "data": {
+        "_id": "661111111111111111111111",
+        "title": "Node.js Design Patterns",
+        "author": "Mario Casciaro",
+        "isbn": "9781839214110",
+        "genre": "Programming",
+        "publisher": "Packt",
+        "publicationYear": 2022,
+        "totalCopies": 8,
+        "availableCopies": 8,
+        "shelfLocation": "D1-R4",
+        "bookType": "Circulating",
+        "status": "Available"
+      }
+    }
+  },
+  "getBooks": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "count": 3
+    }
+  },
+  "searchBooks": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "count": 1
+    }
+  },
+  "validationError": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "ISBN is required"
+    }
+  },
+  "notFound": {
+    "status": 404,
+    "body": {
+      "success": false,
+      "message": "Book not found"
+    }
+  }
+}
